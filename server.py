@@ -1,31 +1,13 @@
 import os
-import sys
 import tempfile
 from pathlib import Path
 
 from flask import Flask, request, jsonify, send_from_directory
-from werkzeug.utils import secure_filename
+from google.cloud import speech
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
-# Load model once at startup
-model = None
-
-
-def load_model():
-    from faster_whisper import WhisperModel
-    return WhisperModel(
-        "Tnaot/whisper-large-v3-khmer-ct2",
-        device="cuda",
-        compute_type="int8_float16",
-    )
-
-
-def get_model():
-    global model
-    if model is None:
-        model = load_model()
-    return model
+client = speech.SpeechClient()
 
 
 @app.route("/")
@@ -46,20 +28,23 @@ def transcribe():
         tmp_path = tmp.name
 
     try:
-        m = get_model()
-        segments, info = m.transcribe(
-            tmp_path,
-            language="km",
-            task="transcribe",
-            beam_size=5,
-            vad_filter=True,
+        with open(tmp_path, "rb") as f:
+            content = f.read()
+
+        audio = speech.RecognitionAudio(content=content)
+        config = speech.RecognitionConfig(
+            language_code="km-KH",
+            enable_automatic_punctuation=True,
+            model="latest_long",
         )
-        text = " ".join(seg.text.strip() for seg in segments)
-        return jsonify({
-            "text": text,
-            "detected_language": info.language,
-            "duration": info.duration,
-        })
+
+        response = client.recognize(config=config, audio=audio)
+
+        text = " ".join(
+            result.alternatives[0].transcript for result in response.results
+        )
+
+        return jsonify({"text": text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -67,7 +52,6 @@ def transcribe():
 
 
 if __name__ == "__main__":
-    print("Loading Khmer Whisper model (first request will trigger download if needed)...")
-    get_model()
-    print("Model loaded. Starting server on http://127.0.0.1:5000")
-    app.run(debug=False, host="127.0.0.1", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting server on 0.0.0.0:{port}")
+    app.run(debug=False, host="0.0.0.0", port=port)
