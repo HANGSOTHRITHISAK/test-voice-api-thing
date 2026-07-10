@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groq Hyper-Speed Audio Sandbox</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .card {
+            background: #111827;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+            border: 1px solid #1f2937;
+        }
+        h2 {
+            margin-top: 0;
+            color: #f59e0b;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+        input[type="password"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: #030712;
+            color: #fff;
+        }
+        input[type="file"] {
+            cursor: pointer;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #f59e0b;
+            color: #090d16;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #d97706; }
+        #status {
+            text-align: center;
+            font-weight: 600;
+            color: #fbbf24;
+            margin-bottom: 15px;
+            min-height: 20px;
+            margin-top: 15px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            resize: vertical;
+            background-color: #030712;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>⚡ Groq Khmer Audio Sandbox</h2>
+    
+    <div class="form-group">
+        <label for="apiKey">Groq API Key</label>
+        <input type="password" id="apiKey" placeholder="Paste your gsk_... key here" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+        <label for="audioFile">Select Phone Audio File (.m4a, .mp3, .wav)</label>
+        <input type="file" id="audioFile" accept="audio/*">
+    </div>
+
+    <button id="transcribeBtn">🚀 Transcribe via Groq</button>
+
+    <div id="status">Ready</div>
+
+    <div class="form-group">
+        <label for="output">Transcribed Text Output (Khmer)</label>
+        <textarea id="output" readonly placeholder="The ultra-fast transcription text will display here..."></textarea>
+    </div>
+</div>
+
+<script>
+    const transcribeBtn = document.getElementById('transcribeBtn');
+    const statusDiv = document.getElementById('status');
+    const outputTextarea = document.getElementById('output');
+    const apiKeyInput = document.getElementById('apiKey');
+    const fileInput = document.getElementById('audioFile');
+
+    transcribeBtn.addEventListener('click', async () => {
+        const apiKey = apiKeyInput.value.trim();
+        const file = fileInput.files[0];
+
+        if (!apiKey) {
+            statusDiv.textContent = "⚠️ Please paste your Groq API key first!";
+            statusDiv.style.color = "#fbbf24";
+            return;
+        }
+
+        if (!file) {
+            statusDiv.textContent = "⚠️ Please select an audio file first!";
+            statusDiv.style.color = "#fbbf24";
+            return;
+        }
+
+        statusDiv.textContent = "⚡ Groq processing matrix data at hyper-speed...";
+        statusDiv.style.color = "#60a5fa";
+        outputTextarea.value = "";
+
+        // Build standard multi-part form payload for file upload
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        // Using the ultra-modern fine-tuned Whisper Turbo model hosted on Groq LPU hardware
+        formData.append('model', 'whisper-large-v3');
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                statusDiv.textContent = "✅ Success!";
+                statusDiv.style.color = "#34d399";
+                outputTextarea.value = data.text;
+            } else {
+                statusDiv.textContent = `❌ Error: ${data.error ? data.error.message : 'Transcription failed'}`;
+                statusDiv.style.color = "#f87171";
+                console.error(data);
+            }
+        } catch (error) {
+            statusDiv.textContent = "❌ Network communication error.";
+            statusDiv.style.color = "#f87171";
+            console.error(error);
+        }
+    });
+</script>
+
+</body>
+</html>
