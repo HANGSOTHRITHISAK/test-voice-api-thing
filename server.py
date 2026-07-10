@@ -2,8 +2,11 @@ import os
 import tempfile
 from pathlib import Path
 
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory
 from google.cloud import speech
+
+load_dotenv()
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
